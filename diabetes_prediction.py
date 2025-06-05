@@ -1,46 +1,44 @@
 import pandas as pd
+import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
-import matplotlib.pyplot as plt
 
-# Load the dataset
+# Load dataset
 df = pd.read_csv("B:/MLOps_Dataset/diabetes2.csv")
 
-# Select relevant columns
-df_filtered = df[['BMI', 'Glucose']].copy()
+# Replace zero values with NaN for selected columns
+columns_to_fix = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
+df[columns_to_fix] = df[columns_to_fix].replace(0, np.nan)
 
-# Remove invalid rows
-df_filtered = df_filtered[(df_filtered['BMI'] > 0) & (df_filtered['Glucose'] > 0)]
+# Fill NaN values with mean of each column
+df.fillna(df.mean(numeric_only=True), inplace=True)
 
-# Define features and target
-X = df_filtered[['BMI']]
-y = df_filtered['Glucose']
+# Define input features and target
+features = ['Pregnancies', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI',
+            'DiabetesPedigreeFunction', 'Age']
+X = df[features]
+y = df['Glucose']
 
-# Split dataset
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Normalize the input features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-# Train the model
+# Split into train and test datasets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Train the linear regression model
 model = LinearRegression()
 model.fit(X_train, y_train)
 
-# Predictions
+# Predict the target for test data
 y_pred = model.predict(X_test)
 
-# Evaluation metrics
+# Evaluate the model
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
+# Print results
 print(f"Mean Squared Error (MSE): {mse:.2f}")
 print(f"R² Score: {r2:.3f}")
-
-# Plotting
-plt.scatter(X_test, y_test, color='blue', label='Actual')
-plt.plot(X_test, y_pred, color='red', label='Predicted')
-plt.xlabel('BMI')
-plt.ylabel('Glucose')
-plt.title('Simple Linear Regression: BMI vs Glucose')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
